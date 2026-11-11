@@ -196,14 +196,14 @@ All rules in this section apply to feature code: everything under `src/` except 
 | Section title (PageSection `h2`) | `text-base font-semibold` | Set by `PageSection` |
 | Dialog title, EmptyState title | `text-lg font-medium` | Set by the library |
 | Page title | `PageHeader` only (`--page-title-*` tokens) | Never by hand |
-| Hero text on registered P7 one-offs only | `text-2xl`–`text-5xl` | `font-display` allowed only here |
+| Hero text: registered P7 one-offs and hero slots (T3.4) | `text-2xl`–`text-5xl` | The display and serif families are allowed only here |
 
 | ID | Rule | Check |
 |---|---|---|
 | T3.1 | MUST NOT use arbitrary font sizes (`text-[13px]`, `text-[0.8rem]`) | Gate 1 + Gate 2 |
 | T3.2 | Weights MUST be `font-normal`, `font-medium` or `font-semibold`. Bold comes only from tokens. Never `font-[450]`. | Gate 1 + Gate 2 |
 | T3.3 | MUST NOT use arbitrary leading or tracking. Allowed: `leading-tight`, `-snug`, `-normal`, `-relaxed`; `tracking-tight` (titles ≥ `text-2xl`); `tracking-wide` (uppercase `text-xs` eyebrows only). | Gate 1 + Gate 2 |
-| T3.4 | Families: `font-sans` for all UI, `font-mono` for code, IDs, keys and logs, and `font-data` for tabular numbers only, never headings. `font-display`, `font-title` and `font-serif` are reserved for P7 heroes and the EmptyState glyph. | Gate 3 (D3) + review |
+| T3.4 | Families: `font-sans` for all UI, `font-mono` for code, IDs, keys and logs, and `font-data` for tabular numbers only, never headings. `font-display`, `font-title` and `font-serif` are reserved for P7 heroes, the EmptyState glyph and registered hero slots. A hero slot is one serif headline per screen; today there are two, the chat home greeting ("How can I help, …?") and the Discover hero. A new hero slot is added through Gate 4 review. | Gate 3 (D3) + review |
 | T3.5 | SHOULD use `tabular-nums` on numbers that update: durations, credits, counters | Review |
 
 ### 2.4 Radius (T4)
