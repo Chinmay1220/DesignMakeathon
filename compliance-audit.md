@@ -5,7 +5,7 @@
 | **Audited** | The production build at agent.creao.ai: `index-BTZeeHx5.js` (16.8 MB), `index-BXYlNekV.css` (675 KB) and 184 lazy-loaded chunks |
 | **Fetched** | 2026-11-09 |
 | **Against** | `design-system-guideline.md` v1.1. Rule IDs below (T, C, L, P, GU) refer to it. P1–P8 are always screen patterns. Severity uses S1–S3, so the two never collide. |
-| **Result** | 18 findings: 3 S1, 6 S2, 9 S3. Each one maps to a rule and to the gate that would have blocked it. |
+| **Result** | 21 findings: 3 S1, 9 S2, 9 S3. Each one maps to a rule and to the gate that would have blocked it. F-01 to F-18 come from the bundle. F-19 to F-21 come from a signed-in check of the live app on 2026-11-11. |
 
 **Contents:**
 - [1. Summary](#1-summary)
@@ -24,7 +24,7 @@ Creao's design system works where people use it. The Creao `Button` appears at 1
 1. **Two component libraries ship.** A stock shadcn/ui copy, bundled next to the generative-UI catalog, redefines 21 of Creao's primitives (62 parts), Button included. It even carries its own copy of the class-merge helper. The agent's generated UI is drawn with this copy, not Creao's.
 2. **The agent's own UI is off-system.** Generated blocks in chat use the legacy `ox-*` palette and a hard-coded cream background, plus 35 CSS overrides that restyle library components from outside.
 3. **Four render modes, no checks.** Classic and v2, each light and dark, change button heights, radii and title sizes. Hard-coded values are right in at most one mode.
-4. **Nothing above the component level.** Page titles come in 31 hand-written styles. 27 of 32 empty states are hand-rolled. Form dialogs use two different overlay types, and there is no width system: production uses 68 distinct arbitrary max-widths.
+4. **Nothing above the component level.** Page titles come in 31 hand-written styles. 27 of 32 empty states are hand-rolled. Form dialogs use two different overlay types, and there is no width system: production uses 68 distinct arbitrary max-widths. Signed in, two collection pages (Agents and Discover) lay out the same toolbar and tabs in two different ways.
 
 **Baseline metrics.** These come from the Gate 2 scanner and count only classes that both the CSS and the JS reference:
 
@@ -54,6 +54,8 @@ Creao's design system works where people use it. The Creao `Button` appears at 1
 - Safe-area variables are used.
 - Library primitives emit `data-slot`. Button and TabsList also emit `data-variant`, and Button emits `data-size`. That's what makes DOM-level checks (Gate 3) cheap to build.
 - On touch screens, v2 raises button heights to the classic values (`@media (pointer: coarse)`).
+- The live screens follow the P1 and P2 skeletons. Chat has a centred message column, with the composer docked at the same width. The Agents page has a title on the left and one primary action on the right ("Create agent", with "Import" as outline).
+- The serif headline on the chat home and the Discover hero is a deliberate brand moment. Guideline T3.4 sanctions both as hero slots.
 
 ---
 
@@ -65,9 +67,10 @@ Creao's design system works where people use it. The Creao `Button` appears at 1
 3. **Screens.** Each finding is tied to a screen through evidence inside the minified component itself: the route definition (for example `Ca("/status")`), `data-testid` values and i18n keys (for example `agentDetail.runFilterNoMatches`). Class strings and code are quoted verbatim, with only minified variable names shortened.
 4. **Libraries.** Every `data-slot` definition in the JS was assigned to a library by position. The stock copy is one contiguous region of about 140 KB in `index.js`. That region holds every call to the copy's class-merge helper and none to Creao's.
 5. **Gate 1.** The guideline's ESLint config ran on code rebuilt from those verbatim class strings (§4.3).
+6. **Live check.** On 2026-11-11 the author signed in and captured the chat home, one conversation, the Agents page and Discover. F-19 to F-21 come from those screens. They're visual observations: no class strings were extracted for them, and the screenshots aren't included.
 
 **Limits:**
-- **No signed-in session, so no screenshots.** Statements about how something looks are derived from token values and marked *(derived)*. Gate 3 snapshots would confirm them.
+- **One short signed-in check.** Outside the four screens in step 6, statements about how something looks are derived from token values and marked *(derived)*. Gate 3 snapshots would confirm them.
 - **The assessment's screen set wasn't available in this workspace.** The production bundle contains every shipped screen, so findings are anchored to routes and components instead.
 - **Empty states and dialogs were mapped to their components heuristically.** For empty states: whether `EmptyState` appears within ±400 characters of the test id. For dialogs: which overlay component renders around the dialog's test id. The empty states quoted in F-05 were confirmed by reading the code.
 - **Component names are inferred from `data-slot`** (for example `empty-state` → `EmptyState`).
@@ -446,6 +449,49 @@ Strings like `text-[Npx|rem|em]` read like a written rule about arbitrary values
 
 **Caught by:** Gate 2 (`phantomClasses` is ratcheted). **Fix:** exclude non-UI folders with Tailwind's `@source not`.
 
+### F-19 · The Agents table breaks the table rules · S2
+
+**Where:** the Agents page (sidebar → Agents), signed in, 2026-11-11.
+
+**Evidence (live screen):**
+- Each row shows four icon buttons (run, schedule, people, share) and then a `⋯` menu.
+- "Last run" shows state as an icon plus plain text ("23h ago · ✓ OK"), not as a `StatusPill`.
+- Paging is a "Rows 5" page-size picker under "Showing 1–1 of 1 agent".
+
+**Breaks:** P2.4 (row actions sit in one `⋯` menu; state is a `StatusPill`), C5.1, and the paging row of the guideline's §3.2 job table ("Load more").
+
+**How enforcement would have caught it:** no class in it is invalid, so lint and the scan pass it. Gate 4 review against P2.4 catches it first. Once fixed, the page's Gate 3 snapshot holds it in all four modes.
+
+**Fix:** move the four actions into the row's `⋯` menu, show state with `StatusPill`, and replace the page-size picker with "Load more".
+
+### F-20 · Two collection pages, two layouts · S2
+
+**Where:** the Agents page and Discover, both P2.
+
+**Evidence (live screens):**
+- **Selected scope tab.** On Agents it's a light grey pill ("All agents"). On Discover it's a black pill ("Agents"), and Discover's category chips use the same black style. At most one of the two can be the library's `pill` variant as shipped.
+- **Search.** On Agents, search sits on its own row with the filters, below the tabs. On Discover it shares the tab row, aligned right.
+
+**Breaks:** P2.1 (one `PageToolbar` row), the §3.2 job table (scope filters are `Tabs variant="pill"`), and C2.4 if the black style comes from a `className` override.
+
+**How enforcement would have caught it:** Gate 4 review first. Once both pages render `PageToolbar`, they share one structure (search, filters, scope, view), and Gate 3 snapshots hold it.
+
+**Fix:** build both toolbars with `PageToolbar`, with scope as `Tabs variant="pill"`.
+
+### F-21 · Two notice styles stacked on one page · S2
+
+**Where:** the top of the Agents page.
+
+**Evidence (live screen):** an announcement ("Team agents & skills are here") sits directly above a second notice ("… is only visible to you — publish it so your team can use it"). They look different:
+- The announcement is white with a border, an icon, a bold title and a close button.
+- The second notice has a grey fill, no icon, a "Publish to team" button and a close button.
+
+**Breaks:** C7.2 (persistent notices use one Callout recipe).
+
+**How enforcement would have caught it:** Gate 1 catches a notice only when it uses raw palette colours (F-08). Notices built from tokens pass lint, so this is Gate 4's job until the `Callout` component ships (guideline §9).
+
+**Fix:** render both with the C7.2 recipe today, and with `Callout` once it ships.
+
 ---
 
 ## 4. Proof: the enforcement mechanism on real output
@@ -537,8 +583,11 @@ A file written to the guideline produced **0 problems**. It used `rounded-(--car
 | F-11–F-16 Systemic sprawl | **T3–T9, T1.4, T1.5** | **ratchet** | D3–D5 | |
 | F-17 Token defects | | **Token contract test** | 4-mode snapshots | Library owner |
 | F-18 Phantom CSS | | **phantomClasses** | | |
+| F-19 Agents table | | | snapshot holds the fix | **P2.4 review** |
+| F-20 Two collection layouts | C2.4 if `className` | | snapshots once both use `PageToolbar` | **P2.1 review** |
+| F-21 Two notice styles | T1.1 if raw palette | | snapshot | **C7.2 review** |
 
-**Bold** marks the gate that fails first. Every finding is caught by at least one deterministic gate, either lint or the build scan, before merge.
+**Bold** marks the gate that fails first. F-01 to F-18 are each caught before merge by at least one deterministic gate, either lint or the build scan. F-19 to F-21 are pattern drift: every class in them is valid, so review catches them first. Pattern components (`PageToolbar`, `Callout`) then turn them into structure that Gate 3 holds.
 
 ---
 
@@ -565,5 +614,6 @@ A file written to the guideline produced **0 problems**. It used `rounded-(--car
 | 5 | F-07, F-08, F-09 | Rebuild `/status` on tokens; Callout recipe; chart and tile colours from tokens | S | `T1.3` 11 → 4; `T1.7` clean |
 | 6 | F-04 | Adopt `PageHeader` on P2, P3 and P5 screens | M | D2 passes; raw `h1` count → 0 outside P7 one-offs |
 | 7 | F-05 | `EmptyState size="sm"`, then migrate 27 sites | M | D6 passes; C6.1 clean |
-| 8 | F-17 | Token fixes (library owner) | M | Token contract test passes; `T2.1` falls as patches are deleted |
-| 9 | F-10 to F-16, F-18 | Sprint-by-sprint burn-down | Ongoing | `baseline.json` decreases every sprint (target −25% per quarter on T1.1, T1.2, T2.1) |
+| 8 | F-19, F-20, F-21 | Agents and Discover onto `PageToolbar`; table row actions into `⋯`; state as `StatusPill`; both notices on the C7.2 recipe | S | Agents and Discover snapshots match the P2 exemplar |
+| 9 | F-17 | Token fixes (library owner) | M | Token contract test passes; `T2.1` falls as patches are deleted |
+| 10 | F-10 to F-16, F-18 | Sprint-by-sprint burn-down | Ongoing | `baseline.json` decreases every sprint (target −25% per quarter on T1.1, T1.2, T2.1) |
